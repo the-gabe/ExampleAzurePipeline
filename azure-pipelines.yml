@@ -9,48 +9,67 @@ trigger:
     - ExampleProject2-dev-*
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: windows-latest
 
 steps:
-- script: |
-    if [[ "$(Build.SourceBranch)" == *"-prod-"* ]]; then
-      echo "Setting 'deployTo' variable to 'prod'"
-      echo "##vso[task.setvariable variable=deployTo]prod"
-    elif [[ "$(Build.SourceBranch)" == *"-uat-"* ]]; then
-      echo "Setting 'deployTo' variable to 'uat'"
-      echo "##vso[task.setvariable variable=deployTo]uat"
-    elif [[ "$(Build.SourceBranch)" == *"-dev-"* ]]; then
-      echo "Setting 'deployTo' variable to 'dev'"
-      echo "##vso[task.setvariable variable=deployTo]dev"
-    else
-      echo "Invalid tag name was set, bailing out."
-      exit 1
-    fi
+- task: Bash@3
   displayName: Configure variables for deployment target.
-- script: |
-    if [[ "$(deployTo)" == "dev" ]]; then
-      echo "Setting 'buildConfiguration' variable to 'Debug'"
-      echo "##vso[task.setvariable variable=buildConfiguration]Debug"
-    else
-      echo "Setting 'buildConfiguration' variable to 'Release'"
-      echo "##vso[task.setvariable variable=buildConfiguration]Release"
-    fi
+  inputs:
+    targetType: 'inline'
+    script: |
+      if [[ "$(Build.SourceBranch)" == *"-prod-"* ]]; then
+        echo "Setting 'deployTo' variable to 'prod'"
+        echo "##vso[task.setvariable variable=deployTo]prod"
+      elif [[ "$(Build.SourceBranch)" == *"-uat-"* ]]; then
+        echo "Setting 'deployTo' variable to 'uat'"
+        echo "##vso[task.setvariable variable=deployTo]uat"
+      elif [[ "$(Build.SourceBranch)" == *"-dev-"* ]]; then
+        echo "Setting 'deployTo' variable to 'dev'"
+        echo "##vso[task.setvariable variable=deployTo]dev"
+      else
+        echo "Invalid tag name was set, bailing out."
+        exit 1
+      fi
+
+- task: Bash@3
   displayName: Configure variables for build configuration.
-- script: |
-    if [[ "$(Build.SourceBranch)" == "refs/tags/ExampleProject-"* ]]; then
-      echo "We will be building 'ExampleProject'"
-      echo "##vso[task.setvariable variable=buildTarget]ExampleProject"
-    elif [[ "$(Build.SourceBranch)" == "refs/tags/ExampleProject2-"* ]]; then
-      echo "We will be building 'ExampleProject2'"
-      echo "##vso[task.setvariable variable=buildTarget]ExampleProject2"
-    else
-      echo "Invalid tag name was set, bailing out."
-      exit 1
-    fi
+  inputs:
+    targetType: 'inline'
+    script: |
+      if [[ "$(deployTo)" == "dev" ]]; then
+        echo "Setting 'buildConfiguration' variable to 'Debug'"
+        echo "##vso[task.setvariable variable=buildConfiguration]Debug"
+      else
+        echo "Setting 'buildConfiguration' variable to 'Release'"
+        echo "##vso[task.setvariable variable=buildConfiguration]Release"
+      fi
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      if [[ "$(Build.SourceBranch)" == "refs/tags/ExampleProject-"* ]]; then
+        echo "We will be building 'ExampleProject'"
+        echo "##vso[task.setvariable variable=buildTarget]ExampleProject"
+      elif [[ "$(Build.SourceBranch)" == "refs/tags/ExampleProject2-"* ]]; then
+        echo "We will be building 'ExampleProject2'"
+        echo "##vso[task.setvariable variable=buildTarget]ExampleProject2"
+      else
+        echo "Invalid tag name was set, bailing out."
+        exit 1
+      fi
   displayName: Configure variables for build target.
 
-- script: dotnet build --configuration $(buildConfiguration) $(buildTarget)
+- task: Bash@3
   displayName: 'Build chosen .NET build target'
+  inputs:
+    targetType: 'inline'
+    script: | 
+      dotnet build --configuration $(buildConfiguration) $(buildTarget)
 
-- script: echo 'deploy to $(deployTo)'
+- task: Bash@3
   displayName: 'Dummy deploy'
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo 'deploy to $(deployTo)'
